@@ -1,0 +1,92 @@
+<!-- doctor/view-appointments.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>View Appointments</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #d0e6ff;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+        select {
+            padding: 4px;
+        }
+    </style>
+</head>
+<body>
+<div class="login-container" style="width: 1000px">
+    <h2>My Appointments</h2>
+    <table id="appointmentsTable">
+        <thead>
+        <tr>
+            <th>Patient</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Status</th>
+            <th>Description</th>
+            <th>Phone</th>
+        </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+    <button onclick="location.href='dashboard.html'">Back to Dashboard</button>
+</div>
+
+<script>
+    const username = localStorage.getItem('username');
+    fetch(`http://localhost:3000/doctor/appointments?username=${username}`)
+        .then(res => res.json())
+        .then(data => {
+            const tbody = document.querySelector('#appointmentsTable tbody');
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6">No appointments found.</td></tr>';
+                return;
+            }
+            data.forEach(app => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+          <td>${app.patient_name}</td>
+          <td>${app.appointment_date}</td>
+          <td>${app.appointment_time}</td>
+          <td>
+            <select data-id="${app.id}" class="status-select">
+              <option value="Pending" ${app.status === 'Pending' ? 'selected' : ''}>Pending</option>
+              <option value="Completed" ${app.status === 'Completed' ? 'selected' : ''}>Completed</option>
+              <option value="Cancelled" ${app.status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
+            </select>
+          </td>
+          <td>${app.description || 'None'}</td>
+          <td>${app.phone_number}</td>
+        `;
+                tbody.appendChild(row);
+            });
+
+            document.querySelectorAll('.status-select').forEach(select => {
+                select.addEventListener('change', async function () {
+                    const appointmentId = this.getAttribute('data-id');
+                    const status = this.value;
+                    const res = await fetch(`http://localhost:3000/doctor/appointments/${appointmentId}/status`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ status })
+                    });
+                    const result = await res.json();
+                    alert(result.message);
+                });
+            });
+        });
+</script>
+</body>
+</html>

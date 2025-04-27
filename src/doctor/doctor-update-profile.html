@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Update Profile</title>
+    <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<div class="login-container">
+    <h2>Update Profile</h2>
+    <form id="profileForm">
+        <label>Full Name</label>
+        <input type="text" id="name" placeholder="eg: sadman hossain sajid" />
+        <label>Contact number</label>
+        <input type="text" id="contact" placeholder="eg: 018XXXXXXXX"  />
+        <label>Email Address</label>
+        <input type="email" id="email" placeholder="eg: sajid1234@gmail.com"  />
+        <label>Preferred hour/label>
+        <input type="text" id="hours" placeholder="eg: 8:00 pm - 10:00 pm"  />
+        <label>Education</label>
+        <textarea id="education" placeholder="eg: dhaka medical college"></textarea>
+        <label>Expertise</label>
+        <textarea id="expertise" placeholder="eg: nephrology"></textarea>
+        <button type="submit">Save</button>
+        <button type="button" onclick="location.href='dashboard.html'">Back</button>
+    </form>
+</div>
+
+<script>
+    const username = localStorage.getItem("username");
+
+    async function loadProfile() {
+        const res = await fetch(`/doctor/profile?username=${username}`);
+        const data = await res.json();
+        if (data) {
+            document.getElementById("name").value = data.name || '';
+            document.getElementById("contact").value = data.contact_number || '';
+            document.getElementById("email").value = data.email || '';
+            document.getElementById("hours").value = data.preferred_hour || '';
+            document.getElementById("education").value = data.education || '';
+            document.getElementById("expertise").value = data.expertise || '';
+        }
+    }
+
+    document.getElementById("profileForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const body = {
+            username,
+            name: document.getElementById("name").value.trim(),
+            contact: document.getElementById("contact").value.trim(),
+            email: document.getElementById("email").value.trim(),
+            hours: document.getElementById("hours").value.trim(),
+            education: document.getElementById("education").value.trim(),
+            expertise: document.getElementById("expertise").value.trim()
+        };
+        const res = await fetch('/doctor/update-profile', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        alert(data.message || 'Profile updated');
+    });
+
+    // Fetch profile on load
+    window.onload = loadProfile;
+</script>
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>My Appointments</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<div class="login-container">
+  <h2>My Appointments</h2>
+
+  <table id="appointmentsTable">
+    <thead>
+    <tr>
+      <th>Doctor</th>
+      <th>Date</th>
+      <th>Time</th>
+      <th>Status</th>
+      <th>Action</th>
+    </tr>
+    </thead>
+    <tbody id="appointmentsList">
+    <!-- Appointments will be dynamically inserted here -->
+    </tbody>
+  </table>
+
+  <button onclick="location.href='dashboard.html'">Back to Dashboard</button>
+</div>
+
+<script>
+  const username = localStorage.getItem('username');
+
+  if (!username) {
+    alert("You're not logged in.");
+    window.location.href = '../login.html';
+  }
+
+  async function fetchAppointments() {
+    const response = await fetch(`/patient/my-appointments?username=${username}`);
+    const data = await response.json();
+
+    const tableBody = document.getElementById('appointmentsList');
+    tableBody.innerHTML = '';
+
+    if (data.length === 0) {
+      const row = document.createElement('tr');
+      row.innerHTML = `<td colspan="5">No appointments found.</td>`;
+      tableBody.appendChild(row);
+      return;
+    }
+
+    data.forEach(app => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${app.doctor_name}</td>
+        <td>${app.appointment_date}</td>
+        <td>${app.appointment_time}</td>
+        <td>${app.status}</td>
+        <td><button onclick="alert('Please contact an admin to cancel this appointment.')">Cancel</button></td>
+      `;
+      tableBody.appendChild(row);
+    });
+  }
+
+  window.onload = fetchAppointments;
+</script>
+</body>
+</html>

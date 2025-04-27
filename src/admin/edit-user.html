@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit User</title>
+    <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<div class="login-container">
+    <h2>Edit User</h2>
+
+    <!-- Shared username input -->
+    <input type="text" id="username" placeholder="Username" required />
+
+    <!-- Update name form -->
+    <form id="editNameForm">
+        <input type="text" id="newName" placeholder="New Name" />
+        <button type="submit">Update Name</button>
+    </form>
+
+    <!-- Update password form -->
+    <form id="editPasswordForm">
+        <input type="password" id="newPassword" placeholder="New Password" />
+        <button type="submit">Update Password</button>
+    </form>
+
+    <!-- Delete user form -->
+    <form id="deleteUserForm">
+        <button type="submit" style="background-color: red;">Delete User</button>
+    </form>
+
+    <p id="message"></p>
+    <button onclick="location.href='dashboard.html'">Back to Dashboard</button>
+</div>
+
+<script>
+    const usernameInput = document.getElementById('username');
+    const message = document.getElementById('message');
+
+    document.getElementById('editNameForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const username = usernameInput.value;
+        const newName = document.getElementById('newName').value;
+
+        const response = await fetch('http://localhost:3000/admin/edit-user-name', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, newName })
+        });
+
+        const result = await response.json();
+        message.textContent = result.message;
+    });
+
+    document.getElementById('editPasswordForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const username = usernameInput.value;
+        const newPassword = document.getElementById('newPassword').value;
+
+        const response = await fetch('http://localhost:3000/admin/edit-user-password', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, newPassword })
+        });
+
+        const result = await response.json();
+        message.textContent = result.message;
+    });
+
+    document.getElementById('deleteUserForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const username = usernameInput.value;
+
+        const response = await fetch('http://localhost:3000/admin/delete-user', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username })
+        });
+
+        const result = await response.json();
+        message.textContent = result.message;
+    });
+</script>
+</body>
+</html>

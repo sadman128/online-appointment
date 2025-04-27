@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Edit Appointment</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<div class="login-container">
+  <h2>Edit or Delete Appointment</h2>
+
+  <form id="editForm">
+    <input type="number" id="appointmentId" placeholder="Appointment ID" required>
+    <button type="button" id="fetchButton">Fetch Appointment</button>
+
+    <div id="appointmentDetails" style="margin-top: 20px;">
+      <div>
+        <label for="newDate"><strong>Date:</strong></label>
+        <input type="date" id="newDate" required>
+      </div>
+
+      <div>
+        <label for="time"><strong>Time:</strong></label>
+        <select id="time" required>
+          <option value="">Select Time Slot</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="status"><strong>Status:</strong></label>
+        <select id="status" required>
+          <option value="">Select Status</option>
+          <option value="pending">Pending</option>
+          <option value="scheduled">Scheduled</option>
+          <option value="accepted">Accepted</option>
+          <option value="canceled">Canceled</option>
+          <option value="completed">Completed</option>
+        </select>
+      </div>
+
+      <button type="submit" style="margin-top: 20px;">Update Appointment</button>
+    </div>
+  </form>
+
+  <form id="deleteForm" style="margin-top: 30px;">
+    <input type="number" id="deleteId" placeholder="Appointment ID to Delete" required>
+    <button style="background-color: red;" type="submit">Delete Appointment</button>
+  </form>
+
+  <p id="message"></p>
+  <button onclick="location.href='dashboard.html'">Back to Dashboard</button>
+</div>
+
+<script>
+  const timeSelect = document.getElementById('time');
+  const dateInput = document.getElementById('newDate');
+  const statusSelect = document.getElementById('status');
+
+  const allSlots = [
+    '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+    '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30',
+    '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30',
+    '20:00', '20:30', '21:00', '21:30', '22:00'
+  ];
+
+  async function loadSlots(selectedTime = '') {
+    const date = dateInput.value;
+    timeSelect.innerHTML = '<option value="">Select Time Slot</option>';
+    if (!date) return;
+
+    const res = await fetch(`/admin/booked-slots?date=${date}`);
+    const bookedSlots = await res.json();
+
+    allSlots.forEach(slot => {
+      const option = document.createElement('option');
+      option.value = slot;
+      option.textContent = slot;
+      if (bookedSlots.includes(slot) && slot !== selectedTime) {
+        option.textContent += " (Booked)";
+        option.disabled = true;
+        option.style.color = 'gray';
+      }
+      timeSelect.appendChild(option);
+    });
+  }
+
+  document.getElementById('fetchButton').addEventListener('click', async () => {
+    const id = document.getElementById('appointmentId').value;
+    if (!id) {
+      alert('Enter Appointment ID first.');
+      return;
+    }
+
+    const res = await fetch(`/admin/appointment/${id}`);
+    if (!res.ok) {
+      document.getElementById('message').textContent = 'Appointment not found.';
+      return;
+    }
+
+    const data = await res.json();
+    document.getElementById('appointmentDetails').style.display = 'block';
+
+    dateInput.value = new Date(data.appointment_date).toISOString().split('T')[0];
+
+    statusSelect.value = data.status;
+
+    await loadSlots(data.appointment_time.slice(0,5));
+    timeSelect.value = data.appointment_time.slice(0,5);
+  });
+
+  document.getElementById('editForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('appointmentId').value;
+    const date = dateInput.value;
+    const time = timeSelect.value;
+    const status = statusSelect.value;
+
+    const res = await fetch('/admin/edit-appointment', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, date, time, status })
+    });
+
+    const data = await res.json();
+    document.getElementById('message').textContent = data.message;
+  });
+
+  document.getElementById('deleteForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('deleteId').value;
+
+    const res = await fetch('/admin/delete-appointment', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id })
+    });
+
+    const data = await res.json();
+    document.getElementById('message').textContent = data.message;
+  });
+</script>
+</body>
+</html>

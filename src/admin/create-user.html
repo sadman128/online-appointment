@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Create User</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<div class="login-container">
+  <h2>Create New User</h2>
+  <form id="createUserForm">
+    <input type="text" id="name" placeholder="Name" required />
+    <input type="text" id="username" placeholder="Username" required />
+    <input type="password" id="password" placeholder="Password" required />
+    <select id="role" required>
+      <option value="">Select Role</option>
+      <option value="doctor">Doctor</option>
+      <option value="patient">Patient</option>
+    </select>
+    <button type="submit">Create</button>
+  </form>
+  <p id="message"></p>
+  <button onclick="location.href='dashboard.html'">Back to Dashboard</button>
+</div>
+
+<script>
+  document.getElementById('createUserForm').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const name = document.getElementById('name').value;
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    const role = document.getElementById('role').value;
+
+    const response = await fetch('http://localhost:3000/admin/create-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, username, password, role })
+    });
+
+    const result = await response.json();
+    document.getElementById('message').textContent = result.message;
+  });
+</script>
+</body>
+</html>

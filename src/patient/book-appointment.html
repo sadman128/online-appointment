@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Book Appointment</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<div class="login-container">
+  <h2>Book Appointment</h2>
+  <form id="appointmentForm">
+    <select id="doctor" required>
+      <option value="">Select Doctor</option>
+    </select>
+
+    <input type="date" id="date" required min="" />
+    <select id="time" required>
+      <option value="">Select Time Slot</option>
+    </select>
+
+    <textarea id="description" placeholder="Describe your issue..." required></textarea>
+
+    <button type="submit">Book Appointment</button>
+  </form>
+
+  <p id="message"></p>
+  <button onclick="location.href='dashboard.html'">Back to Dashboard</button>
+</div>
+
+<!-- Phone Number Modal -->
+<div class="modal" id="phoneModal">
+  <div class="modal-content">
+    <h3>Enter Phone Number</h3>
+    <input type="text" id="phoneInput" placeholder="+8801XXXXXXXXX" />
+    <div>
+      <button onclick="submitPhone()">Submit</button>
+      <button onclick="closeModal()">Cancel</button>
+    </div>
+    <p id="phoneError" style="color: red;"></p>
+  </div>
+</div>
+
+<script>
+  const doctorSelect = document.getElementById('doctor');
+  const dateInput = document.getElementById('date');
+  const timeSelect = document.getElementById('time');
+  const message = document.getElementById('message');
+  const username = localStorage.getItem('username');
+
+  let appointmentData = {}; // Temporarily store data for modal use
+
+  if (!username) {
+    alert("You're not logged in.");
+    window.location.href = '../login.html';
+  }
+
+  const today = new Date().toISOString().split("T")[0];
+  dateInput.min = today;
+
+  fetch('/patient/doctors')
+          .then(res => res.json())
+          .then(data => {
+            data.forEach(doctor => {
+              const option = document.createElement('option');
+              option.value = doctor.username;
+              option.textContent = doctor.name;
+              doctorSelect.appendChild(option);
+            });
+          });
+
+  function loadSlots() {
+    const doctor = doctorSelect.value;
+    const date = dateInput.value;
+    timeSelect.innerHTML = '<option value="">Select Time Slot</option>';
+    if (!doctor || !date) return;
+
+    fetch(`/patient/available-slots?doctor=${doctor}&date=${date}`)
+            .then(res => res.json())
+            .then(slots => {
+              const allSlots = [
+                '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+                '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30',
+                '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30',
+                '20:00', '20:30', '21:00', '21:30', '22:00'
+              ];
+              allSlots.forEach(slot => {
+                const option = document.createElement('option');
+                option.value = slot;
+                option.textContent = slot;
+                if (!slots.includes(slot)) {
+                  option.disabled = true;
+                  option.textContent += " (Unavailable)";
+                  option.style.color = 'gray';
+                }
+                timeSelect.appendChild(option);
+              });
+            });
+  }
+
+  doctorSelect.addEventListener('change', loadSlots);
+  dateInput.addEventListener('change', loadSlots);
+
+  document.getElementById('appointmentForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    appointmentData = {
+      doctor: doctorSelect.value,
+      date: dateInput.value,
+      time: timeSelect.value,
+      description: document.getElementById('description').value
+    };
+
+    document.getElementById('phoneModal').style.display = 'block';
+  });
+
+  function closeModal() {
+    document.getElementById('phoneModal').style.display = 'none';
+    document.getElementById('phoneError').textContent = '';
+  }
+
+  async function submitPhone() {
+    const phone = document.getElementById('phoneInput').value;
+    if (!/^\+880\d{10}$/.test(phone)) {
+      document.getElementById('phoneError').textContent = 'Phone must start with +880 and contain 13 digits total.';
+      return;
+    }
+
+    const res = await fetch('/patient/book-appointment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, ...appointmentData, phone })
+    });
+
+    const result = await res.json();
+    message.textContent = result.message;
+    closeModal();
+  }
+</script>
+</body>
+</html>

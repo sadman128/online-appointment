@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Patient Dashboard</title>
+    <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<div class="login-container">
+    <h2>Patient Dashboard</h2>
+    <button onclick="location.href='book-appointment.html'">Book Appointment</button>
+    <button onclick="location.href='my-appointments.html'">My Appointments</button>
+    <button onclick="location.href='view-doctors.html'">View Doctors</button>
+    <button onclick="logout()">Logout</button>
+</div>
+
+<script>
+    function logout() {
+        window.location.href = '../login.html';
+    }
+</script>
+</body>
+</html>
