@@ -13,6 +13,13 @@ router.get('/appointments', async (req, res) => {
              WHERE a.doctor_username = ? ORDER BY a.appointment_date, a.appointment_time`,
             [username]
         );
+        rows.forEach(appointment => {
+            const localDate = new Date(appointment.appointment_date);
+            const formattedDate = localDate.getFullYear() + '-' +
+                String(localDate.getMonth() + 1).padStart(2, '0') + '-' +
+                String(localDate.getDate()).padStart(2, '0');
+            appointment.appointment_date = formattedDate;
+        });
         res.json(rows);
     } catch (err) {
         console.error('Error fetching appointments:', err);
@@ -22,7 +29,7 @@ router.get('/appointments', async (req, res) => {
 
 // Update appointment status
 router.put('/appointments/:id/status', async (req, res) => {
-    const { status } = req.body;
+    const { status } = req.body.toLowerCase();
     const { id } = req.params;
 
     if (!status) return res.status(400).json({ message: 'Status required' });

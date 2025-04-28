@@ -62,9 +62,9 @@
           <td>${app.appointment_time}</td>
           <td>
             <select data-id="${app.id}" class="status-select">
-              <option value="Pending" ${app.status === 'Pending' ? 'selected' : ''}>Pending</option>
-              <option value="Completed" ${app.status === 'Completed' ? 'selected' : ''}>Completed</option>
-              <option value="Cancelled" ${app.status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
+              <option value="Pending" ${app.status === 'pending' ? 'selected' : ''}>Pending</option>
+              <option value="Completed" ${app.status === 'completed' ? 'selected' : ''}>Completed</option>
+              <option value="Cancelled" ${app.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
             </select>
           </td>
           <td>${app.description || 'None'}</td>

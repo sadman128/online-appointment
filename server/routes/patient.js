@@ -75,7 +75,7 @@ router.post('/book-appointment', async (req, res) => {
 
         await pool.query(
             'INSERT INTO appointments (patient_username, doctor_username, appointment_date, appointment_time, status, description, phone_number) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [username, doctor, date, time, 'Pending', description || null, phone]
+            [username, doctor, date, time, 'pending', description || null, phone]
         );
 
         res.json({ message: 'Appointment booked successfully' });

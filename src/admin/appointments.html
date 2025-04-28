@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Manage Appointments</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f8ff;
+            padding: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #d0e6ff;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+        input[type="text"], select {
+            width: 90%;
+            padding: 4px;
+        }
+        #searchInput {
+            width: 300px;
+            padding: 8px;
+            margin-bottom: 20px;
+        }
+        .login-container {
+            max-width: 1000px;
+            margin: auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        button {
+            padding: 8px 16px;
+            margin-top: 20px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+<div class="login-container">
+    <h2>Manage Appointments</h2>
+
+    <input type="text" id="searchInput" placeholder="Search by Appointment ID">
+
+    <table id="appointmentsTable">
+        <thead>
+        <tr>
+            <th>Appointment ID</th>
+            <th>Doctor</th>
+            <th>Patient</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <button onclick="location.href='dashboard.html'">Back to Dashboard</button>
+    <p id="message"></p>
+</div>
+
+<script>
+    const allSlots = [
+        '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+        '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30',
+        '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30',
+        '20:00', '20:30', '21:00', '21:30', '22:00'
+    ];
+
+    let allAppointments = [];
+
+    const tbody = document.querySelector('#appointmentsTable tbody');
+
+    function formatDate(date) {
+        return new Date(date).toISOString().split('T')[0];
+    }
+
+    function renderTable(appointments) {
+        tbody.innerHTML = '';
+
+        if (appointments.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7">No appointments found.</td></tr>';
+            return;
+        }
+
+        appointments.forEach(app => {
+            console.log(app);
+            const row = document.createElement('tr');
+            row.innerHTML = `
+      <td>${app.id}</td>
+      <td>${app.doctor_username}</td>
+      <td>${app.patient_username}</td>
+      <td>
+        <input type="date" value="${app.appointment_date}" data-id="${app.id}" data-field="date" onchange="updateTimeDropdown(${app.id})">
+    </td>
+
+      <td>
+        <select data-id="${app.id}" data-field="time">
+          ${generateTimeOptions(app, formatDate(app.appointment_date))}
+        </select>
+      </td>
+      <td>
+        <select data-id="${app.id}" data-field="status">
+          ${generateStatusOptions(app.status)}
+        </select>
+      </td>
+      <td><button onclick="saveChanges(${app.id})">Save</button></td>
+    `;
+            tbody.appendChild(row);
+        });
+    }
+
+    function generateStatusOptions(currentStatus) {
+        const statuses = ['pending', 'scheduled', 'accepted', 'canceled', 'completed'];
+        return statuses.map(status =>
+            `<option value="${status}" ${status === currentStatus ? 'selected' : ''}>${status}</option>`
+        ).join('');
+    }
+
+    function generateTimeOptions(app, selectedDate) {
+        const bookedSlots = allAppointments
+            .filter(a =>
+                a.doctor_username === app.doctor_username &&
+                formatDate(a.appointment_date) === selectedDate &&
+                a.id !== app.id &&
+                (a.status === 'scheduled' || a.status === 'accepted')
+            )
+            .map(a => a.appointment_time.slice(0,5));
+
+        return allSlots.map(slot =>
+            `<option value="${slot}"
+      ${slot === app.appointment_time.slice(0,5) ? 'selected' : ''}
+      ${bookedSlots.includes(slot) && slot !== app.appointment_time.slice(0,5) ? 'disabled' : ''}
+    >${slot}${bookedSlots.includes(slot) && slot !== app.appointment_time.slice(0,5) ? ' (Booked)' : ''}</option>`
+        ).join('');
+    }
+
+    async function fetchAppointments() {
+        const res = await fetch('/admin/appointments');
+        const data = await res.json();
+        allAppointments = data;
+        renderTable(data);
+    }
+
+    async function saveChanges(id) {
+        const dateInput = document.querySelector(`input[data-id="${id}"][data-field="date"]`);
+        const timeSelect = document.querySelector(`select[data-id="${id}"][data-field="time"]`);
+        const statusSelect = document.querySelector(`select[data-id="${id}"][data-field="status"]`);
+
+        const updatedData = {
+            id: id,
+            date: dateInput.value,
+            time: timeSelect.value,
+            status: statusSelect.value
+        };
+
+        const res = await fetch('/admin/edit-appointment', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatedData)
+        });
+
+        const result = await res.json();
+        document.getElementById('message').textContent = result.message;
+
+        await fetchAppointments();
+    }
+
+    async function updateTimeDropdown(id) {
+        const app = allAppointments.find(a => a.id === id); // Use appointment ID to find the correct appointment
+        const dateInput = document.querySelector(`input[data-id="${id}"][data-field="date"]`);
+        const timeSelect = document.querySelector(`select[data-id="${id}"][data-field="time"]`);
+
+        if (app && dateInput && timeSelect) {
+            const selectedDate = dateInput.value;
+            const doctor = app.doctor_username;
+
+            // Send a request to get available slots for the doctor and selected date
+            const res = await fetch(`/patient/available-slots?doctor=${doctor}&date=${selectedDate}`);
+            const slots = await res.json();
+
+            // Create the time options dynamically
+            timeSelect.innerHTML = '';  // Clear existing options
+
+            const allSlots = [
+                '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+                '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30',
+                '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30',
+                '20:00', '20:30', '21:00', '21:30', '22:00'
+            ];
+
+            allSlots.forEach(slot => {
+                const option = document.createElement('option');
+                option.value = slot;
+                option.textContent = slot;
+
+                // Disable the option if the slot is already booked
+                if (!slots.includes(slot)) {
+                    option.disabled = false;
+                    option.textContent += " (Unavailable)";
+                    option.style.color = 'gray';
+                }
+                timeSelect.appendChild(option);
+            });
+        }
+    }
+
+
+
+    document.getElementById('searchInput').addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        const filtered = allAppointments.filter(app => app.id.toString().includes(searchTerm));
+        renderTable(filtered);
+    });
+
+    fetchAppointments();
+</script>
+
+</body>
+</html>
