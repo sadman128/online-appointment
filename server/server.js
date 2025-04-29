@@ -84,3 +84,70 @@ app.post('/api/login', async (req, res) => {
 app.listen(PORT, () => {
     console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
+
+
+// --------------------------------------------------------------------------------------------------------------
+
+const axios = require('axios');
+
+// Telegram Bot Token (replace with your actual bot token)
+const TELEGRAM_BOT_TOKEN = '7917966818:AAFolB7yBFrVfGRs1HvVNN2upZ1ERqYfz44';  // Replace with your bot token
+
+// Webhook for receiving Telegram messages
+app.post('/telegram/webhook', async (req, res) => {
+    const update = req.body;
+
+    if (!update.message || !update.message.chat) {
+        return res.sendStatus(200); // Ignore non-message updates
+    }
+
+    const chatId = update.message.chat.id;
+    const text = update.message.text.trim();
+
+    console.log(`📩 Message received from chat ID ${chatId}: ${text}`);
+
+    try {
+        // Check if the user is sending a phone number
+        const phoneNumber = text
+
+        // Search for a doctor with the given phone number
+        const [doctorRows] = await pool.query(
+            'SELECT * FROM doctor_profiles WHERE contact_number = ?',
+            [phoneNumber]
+        );
+
+        if (doctorRows.length > 0) {
+            // If the doctor exists, save the chat ID to their profile
+            await pool.query(
+                'UPDATE doctor_profiles SET telegram = ? WHERE contact_number = ?',
+                [chatId, phoneNumber]
+            );
+
+            console.log(`✅ Saved chat ID for phone number: ${phoneNumber}.`);
+
+            // Notify the doctor
+            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                chat_id: chatId,
+                text: `✅ Hey ${doctorRows[0].name} Your Telegram account has been linked successfully! You will receive all appointments notification here. You dont need to message unless you want to change your number`
+            });
+
+        } else {
+            // If no doctor found, notify the user
+            console.log(`❌ No doctor found with phone number: ${phoneNumber}`);
+
+            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                chat_id: chatId,
+                text: `❌ Phone number not found in the system. Please register your phone number bye typing your number with country code (eg: +88018XXXXXXXXX). `
+            });
+        }
+    } catch (err) {
+        console.error('❌ Error handling message:', err);
+    }
+
+    res.sendStatus(200);
+});
+
+
+
+
+

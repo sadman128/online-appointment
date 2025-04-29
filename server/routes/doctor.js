@@ -86,21 +86,21 @@ router.get('/profile', async (req, res) => {
 
 // Insert or update doctor profile
 router.post('/update-profile', async (req, res) => {
-    const { username, name, contact, email, hours, education, expertise } = req.body;
+    const { username, name, contact, email, hour1,hour2, education, expertise } = req.body;
 
     try {
         const [rows] = await pool.query('SELECT username FROM doctor_profiles WHERE username = ?', [username]);
         if (rows.length > 0) {
             // Update existing profile
             await pool.query(
-                'UPDATE doctor_profiles SET name = ?, contact_number = ?, email = ?, preferred_hour = ?, education = ?, expertise = ? WHERE username = ?',
-                [name, contact, email, hours, education, expertise, username]
+                'UPDATE doctor_profiles SET name = ?, contact_number = ?, email = ?, start_time = ?,end_time = ?, education = ?, expertise = ? WHERE username = ?',
+                [name, contact, email, hour1, hour2, education, expertise, username]
             );
         } else {
             // Insert new profile
             await pool.query(
-                'INSERT INTO doctor_profiles (username, contact_number, email, preferred_hour, education, expertise) VALUES (?, ?, ?, ?, ?, ?)',
-                [username, contact, email, hours, education, expertise]
+                'INSERT INTO doctor_profiles (username, contact_number, email, start_time, end_time, education, expertise) VALUES (?, ?, ?, ?, ?, ?)',
+                [username, contact, email, hour1, hour2, education, expertise]
             );
         }
 

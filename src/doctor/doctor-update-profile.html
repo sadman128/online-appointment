@@ -11,34 +11,94 @@
     <form id="profileForm">
         <label>Full Name</label>
         <input type="text" id="name" placeholder="eg: sadman hossain sajid" />
+
         <label>Contact number</label>
-        <input type="text" id="contact" placeholder="eg: 018XXXXXXXX"  />
+        <input type="text" id="contact" placeholder="eg: +88018XXXXXXXX." />
+
         <label>Email Address</label>
-        <input type="email" id="email" placeholder="eg: sajid1234@gmail.com"  />
-        <label>Preferred hour/label>
-        <input type="text" id="hours" placeholder="eg: 8:00 pm - 10:00 pm"  />
+        <input type="email" id="email" placeholder="eg: sajid1234@gmail.com" />
+
+        <label>Start Hour</label>
+        <select id="hour1">
+            <option value="">Select Start Time</option>
+        </select>
+
+        <label>End Hour</label>
+        <select id="hour2" disabled>
+            <option value="">Select End Time</option>
+        </select>
+
         <label>Education</label>
         <textarea id="education" placeholder="eg: dhaka medical college"></textarea>
+
         <label>Expertise</label>
         <textarea id="expertise" placeholder="eg: nephrology"></textarea>
+
         <button type="submit">Save</button>
         <button type="button" onclick="location.href='dashboard.html'">Back</button>
     </form>
 </div>
 
 <script>
+    const allSlots = [
+        '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+        '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30',
+        '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30',
+        '20:00', '20:30', '21:00', '21:30', '22:00'
+    ];
     const username = localStorage.getItem("username");
 
+    const startSelect = document.getElementById('hour1');
+    const endSelect = document.getElementById('hour2');
+
+    function populateStartTimes() {
+        allSlots.forEach(slot => {
+            const opt = document.createElement('option');
+            opt.value = slot;
+            opt.textContent = slot;
+            startSelect.appendChild(opt);
+        });
+    }
+
+    function updateEndTimes(startTime) {
+        endSelect.innerHTML = '<option value="">Select End Time</option>';
+        if (!startTime) {
+            endSelect.disabled = true;
+            return;
+        }
+        const startIndex = allSlots.indexOf(startTime);
+        allSlots.slice(startIndex + 1).forEach(slot => {
+            const opt = document.createElement('option');
+            opt.value = slot;
+            opt.textContent = slot;
+            endSelect.appendChild(opt);
+        });
+        endSelect.disabled = false;
+    }
+
+    startSelect.addEventListener('change', () => {
+        updateEndTimes(startSelect.value);
+    });
+
     async function loadProfile() {
+        populateStartTimes();
         const res = await fetch(`/doctor/profile?username=${username}`);
         const data = await res.json();
         if (data) {
             document.getElementById("name").value = data.name || '';
             document.getElementById("contact").value = data.contact_number || '';
             document.getElementById("email").value = data.email || '';
-            document.getElementById("hours").value = data.preferred_hour || '';
             document.getElementById("education").value = data.education || '';
             document.getElementById("expertise").value = data.expertise || '';
+
+            if (data.start_time && allSlots.includes(data.start_time)) {
+                startSelect.value = data.start_time;
+                updateEndTimes(data.start_time);
+            }
+
+            if (data.end_time && allSlots.includes(data.end_time)) {
+                endSelect.value = data.end_time;
+            }
         }
     }
 
@@ -49,7 +109,8 @@
             name: document.getElementById("name").value.trim(),
             contact: document.getElementById("contact").value.trim(),
             email: document.getElementById("email").value.trim(),
-            hours: document.getElementById("hours").value.trim(),
+            hour1: startSelect.value,
+            hour2: endSelect.value,
             education: document.getElementById("education").value.trim(),
             expertise: document.getElementById("expertise").value.trim()
         };

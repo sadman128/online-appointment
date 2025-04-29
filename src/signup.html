@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Patient Signup</title>
+    <link rel="stylesheet" href="style.css" />
+    <style>
+        .password-toggle {
+            cursor: pointer;
+            user-select: none;
+            margin-left: 5px;
+            font-size: 0.9em;
+            color: #555;
+        }
+        form label {
+            display: block;
+            margin-top: 10px;
+            margin-bottom: 4px;
+        }
+        form div {
+            display: flex;
+            align-items: center;
+        }
+        form div input {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+<div class="login-container">
+    <h2>Patient Signup</h2>
+    <form id="signupForm">
+        <label for="username">Username</label>
+        <input type="text" id="username" required />
+
+        <label for="name">Full Name</label>
+        <input type="text" id="name" required />
+
+        <label for="contact">Contact Number (+880XXXXXXXXXX)</label>
+        <input type="text" id="contact" required />
+        <label for="password">Password</label>
+        <div>
+            <input type="password" id="password" required />
+            <span class="password-toggle" onmousedown="showPassword('password')" onmouseup="hidePassword('password')" onmouseleave="hidePassword('password')">👁️</span>
+        </div>
+
+        <label for="confirmPassword">Confirm Password</label>
+        <div>
+            <input type="password" id="confirmPassword" required />
+            <span class="password-toggle" onmousedown="showPassword('confirmPassword')" onmouseup="hidePassword('confirmPassword')" onmouseleave="hidePassword('confirmPassword')">👁️</span>
+        </div>
+
+
+
+        <button type="submit">Sign Up</button>
+        <p id="signupError" class="error-message"></p>
+        <p>Already have an account? <a href="login.html">Back to Login</a></p>
+    </form>
+</div>
+
+<script>
+    function showPassword(id) {
+        document.getElementById(id).type = 'text';
+    }
+
+    function hidePassword(id) {
+        document.getElementById(id).type = 'password';
+    }
+
+    document.getElementById('signupForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value.trim();
+        const confirmPassword = document.getElementById('confirmPassword').value.trim();
+        const name = document.getElementById('name').value.trim();
+        const contact = document.getElementById('contact').value.trim();
+
+        if (password !== confirmPassword) {
+            alert('⚠️ Passwords do not match.');
+            return;
+        }
+
+        const body = { username, password, name, contact };
+
+        const res = await fetch('/patient/signup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+
+        const data = await res.json();
+        if (data.success) {
+            alert('Signup successful! Please login.');
+            window.location.href = 'login.html';
+        } else {
+            document.getElementById('signupError').textContent = data.message || 'Signup failed.';
+        }
+    });
+</script>
+
+</body>
+</html>

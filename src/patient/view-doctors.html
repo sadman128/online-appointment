@@ -12,10 +12,12 @@
     <table id="doctorTable">
       <thead>
       <tr>
+        <th>ID</th>
         <th>Name</th>
         <th>Email</th>
         <th>Contact Number</th>
-        <th>Preferred Hour</th>
+        <th>Start Hour</th>
+        <th>End Hour</th>
         <th>Education</th>
         <th>Expertise</th>
       </tr>
@@ -37,10 +39,12 @@
       doctors.forEach(doc => {
         const row = document.createElement('tr');
         row.innerHTML = `
+            <td>${doc.id}</td>
             <td>${doc.name}</td>
             <td>${doc.email}</td>
             <td>${doc.contact_number}</td>
-            <td>${doc.preferred_hour}</td>
+            <td>${doc.start_time}</td>
+            <td>${doc.end_time}</td>
             <td>${doc.education}</td>
             <td>${doc.expertise}</td>
           `;

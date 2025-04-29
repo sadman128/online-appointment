@@ -1,11 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
+const { sendMessageToDoctor } = require('../telegram');
 
 // Get all doctors
 router.get('/doctors', async (req, res) => {
     try {
-        const [rows] = await pool.query("SELECT username, name FROM users WHERE role = 'doctor'");
+        const [rows] = await pool.query("SELECT id,username, name, expertise FROM doctor_profiles ");
         res.json(rows);
     } catch (err) {
         console.error('Error fetching doctors:', err);
@@ -55,6 +56,9 @@ router.get('/available-slots', async (req, res) => {
     }
 });
 
+
+
+
 // Book an appointment (edited again with phone number -sajid)
 router.post('/book-appointment', async (req, res) => {
     const { username, doctor, date, time, description, phone } = req.body;
@@ -76,7 +80,22 @@ router.post('/book-appointment', async (req, res) => {
         await pool.query(
             'INSERT INTO appointments (patient_username, doctor_username, appointment_date, appointment_time, status, description, phone_number) VALUES (?, ?, ?, ?, ?, ?, ?)',
             [username, doctor, date, time, 'pending', description || null, phone]
+        )
+
+        const [row] = await pool.query(
+            `SELECT telegram FROM doctor_profiles WHERE username = ?`, [doctor]
         );
+
+        if (row.length > 0) {
+            if (row[0].telegram === null || row[0].telegram === "") {
+                console.log("No telegram found");
+            } else {
+                const message = `You have an appointment scheduled on date: ${date} time: ${time}.`;
+                console.log("Sending message to doctor: " + message);
+                await sendMessageToDoctor(row[0].telegram, message);
+            }
+        }
+
 
         res.json({ message: 'Appointment booked successfully' });
     } catch (err) {
@@ -117,7 +136,7 @@ router.get('/my-appointments', async (req, res) => {
 router.get('/doctor-info', async (req, res) => {
     try {
         const [rows] = await pool.query(
-            'SELECT username, name, contact_number, email, preferred_hour, education, expertise FROM doctor_profiles ;'
+            'SELECT id ,username, name, contact_number, email, start_time, end_time , education, expertise FROM doctor_profiles ;'
         );
         res.json(rows);
     } catch (err) {
@@ -126,4 +145,34 @@ router.get('/doctor-info', async (req, res) => {
     }
 });
 
+// signup
+
+router.post('/signup', async (req, res) => {
+    const { username, password, name, contact } = req.body;
+
+    if (!username || !password || !name || !contact) {
+        return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    try {
+        // Check if username already exists
+        const [existing] = await pool.query('SELECT * FROM users WHERE username = ?', [username]);
+        if (existing.length > 0) {
+            return res.status(409).json({ message: 'Username already exists' });
+        }
+
+        // Insert into patients table
+        await pool.query(
+            'INSERT INTO users (username, password, name,role, contact) VALUES (?, ?, ?, ?, ?)',
+            [username, password, name, 'patient' , contact]
+        );
+
+        res.json({ success: true, message: 'Patient registered successfully' });
+    } catch (err) {
+        console.error('Signup error:', err);
+        res.status(500).json({ message: 'Server error during signup' });
+    }
+});
+
 module.exports = router;
+

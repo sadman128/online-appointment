@@ -63,39 +63,54 @@
             data.forEach(doctor => {
               const option = document.createElement('option');
               option.value = doctor.username;
-              option.textContent = doctor.name;
+              option.textContent = doctor.id + ". " + doctor.name + " - " + doctor.expertise;
               doctorSelect.appendChild(option);
             });
           });
 
-  function loadSlots() {
+  async function loadSlots() {
     const doctor = doctorSelect.value;
     const date = dateInput.value;
     timeSelect.innerHTML = '<option value="">Select Time Slot</option>';
     if (!doctor || !date) return;
 
-    fetch(`/patient/available-slots?doctor=${doctor}&date=${date}`)
-            .then(res => res.json())
-            .then(slots => {
-              const allSlots = [
-                '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
-                '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30',
-                '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30',
-                '20:00', '20:30', '21:00', '21:30', '22:00'
-              ];
-              allSlots.forEach(slot => {
-                const option = document.createElement('option');
-                option.value = slot;
-                option.textContent = slot;
-                if (!slots.includes(slot)) {
-                  option.disabled = true;
-                  option.textContent += " (Unavailable)";
-                  option.style.color = 'gray';
-                }
-                timeSelect.appendChild(option);
-              });
-            });
+    // Fetch doctor working hours
+    const doctorRes = await fetch('/patient/doctor-info');
+    const doctorData = await doctorRes.json();
+    const selectedDoctor = doctorData.find(d => d.username === doctor);
+    if (!selectedDoctor) return;
+
+    const startTime = selectedDoctor.start_time;
+    const endTime = selectedDoctor.end_time;
+    console.log(startTime, endTime);
+
+    const allSlots = [
+      '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+      '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30',
+      '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30',
+      '20:00', '20:30', '21:00', '21:30', '22:00'
+    ];
+
+    // Filter time slots within working hours
+    const doctorSlots = allSlots.filter(slot => slot >= startTime && slot <= endTime);
+
+    // Fetch available slots
+    const slotRes = await fetch(`/patient/available-slots?doctor=${doctor}&date=${date}`);
+    const availableSlots = await slotRes.json();
+
+    doctorSlots.forEach(slot => {
+      const option = document.createElement('option');
+      option.value = slot;
+      option.textContent = slot;
+      if (!availableSlots.includes(slot)) {
+        option.disabled = true;
+        option.textContent += " (Unavailable)";
+        option.style.color = 'gray';
+      }
+      timeSelect.appendChild(option);
+    });
   }
+
 
   doctorSelect.addEventListener('change', loadSlots);
   dateInput.addEventListener('change', loadSlots);
