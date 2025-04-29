@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
+const { sendMessageToDoctor } = require('../telegram');
 
 // Get all doctors
 router.get('/doctors', async (req, res) => {
@@ -55,6 +56,9 @@ router.get('/available-slots', async (req, res) => {
     }
 });
 
+
+
+
 // Book an appointment (edited again with phone number -sajid)
 router.post('/book-appointment', async (req, res) => {
     const { username, doctor, date, time, description, phone } = req.body;
@@ -76,7 +80,22 @@ router.post('/book-appointment', async (req, res) => {
         await pool.query(
             'INSERT INTO appointments (patient_username, doctor_username, appointment_date, appointment_time, status, description, phone_number) VALUES (?, ?, ?, ?, ?, ?, ?)',
             [username, doctor, date, time, 'pending', description || null, phone]
+        )
+
+        const [row] = await pool.query(
+            `SELECT telegram FROM doctor_profiles WHERE username = ?`, [doctor]
         );
+
+        if (row.length > 0) {
+            if (row[0].telegram === null || row[0].telegram === "") {
+                console.log("No telegram found");
+            } else {
+                const message = `You have an appointment scheduled on date: ${date} time: ${time}.`;
+                console.log("Sending message to doctor: " + message);
+                await sendMessageToDoctor(row[0].telegram, message);
+            }
+        }
+
 
         res.json({ message: 'Appointment booked successfully' });
     } catch (err) {
@@ -127,3 +146,4 @@ router.get('/doctor-info', async (req, res) => {
 });
 
 module.exports = router;
+
